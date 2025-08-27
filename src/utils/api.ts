@@ -5,8 +5,15 @@ const getAuthToken = (): string | null => {
     return localStorage.getItem('authToken');
 };
 
+const getApiBaseUrl = (): string => {
+    // This will use the Vercel URL in production, and localhost in development
+    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+};
+
 const apiFetch = async (url: string, options: RequestInit = {}): Promise<any> => {
     const token = getAuthToken();
+    const baseUrl = getApiBaseUrl();
+    const fullUrl = url.startsWith('/') ? `${baseUrl}${url}` : url;
     
     const headers = {
         'Content-Type': 'application/json',
@@ -17,7 +24,7 @@ const apiFetch = async (url: string, options: RequestInit = {}): Promise<any> =>
         (headers as any)['Authorization'] = `Bearer ${token}`;
     }
 
-    const response = await fetch(url, {
+    const response = await fetch(fullUrl, {
         ...options,
         headers,
     });
