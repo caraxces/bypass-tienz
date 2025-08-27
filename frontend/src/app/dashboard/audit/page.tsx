@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import AuditResults from '@/components/AuditResults';
 import CustomXPathExtractor from '@/components/CustomXPathExtractor'; // Import component mới
 import dynamic from 'next/dynamic';
+import apiFetch from '@/utils/api';
 
 // Dynamically import the visualizer to avoid SSR issues
 const SiteVisualizer = dynamic(() => import('@/components/SiteVisualizer'), { ssr: false });
@@ -48,18 +49,16 @@ export default function AuditPage() {
 
     const interval = setInterval(async () => {
       try {
-        const statusRes = await fetch(`http://localhost:3001/api/crawl/status/${crawlId}`);
-        const statusData = await statusRes.json();
-        if (!statusRes.ok) throw new Error(statusData.error || 'Failed to fetch status');
+        // Use apiFetch for status check
+        const statusData = await apiFetch(`/api/crawl/status/${crawlId}`);
         setPagesCrawled(statusData.pagesCrawled);
 
         // Fetch new results in batches of 20
         if (statusData.pagesCrawled > pagesFetched.current) {
           const pageToFetch = Math.floor(pagesFetched.current / 20) + 1;
           
-          const resultsRes = await fetch(`http://localhost:3001/api/crawl/results/${crawlId}?page=${pageToFetch}&limit=20`);
-          const resultsData = await resultsRes.json();
-          if (!resultsRes.ok) throw new Error(resultsData.error || 'Failed to fetch results');
+          // Use apiFetch for results check
+          const resultsData = await apiFetch(`/api/crawl/results/${crawlId}?page=${pageToFetch}&limit=20`);
           
           if (resultsData.data && resultsData.data.length > 0) {
             setAllResults(prevResults => {
@@ -94,25 +93,11 @@ export default function AuditPage() {
     setCrawlStatus('crawling');
 
     try {
-      const res = await fetch('http://localhost:3001/api/crawl/start', {
+      // Use apiFetch to start the crawl
+      const data = await apiFetch('/api/crawl/start', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url }),
       });
-
-      // Improved Error Handling
-      if (!res.ok) {
-        const contentType = res.headers.get("content-type");
-        if (contentType && contentType.indexOf("application/json") !== -1) {
-          const errData = await res.json();
-          throw new Error(errData.error || `Server error: ${res.status}`);
-        } else {
-          const textError = await res.text();
-          throw new Error(`Server returned a non-JSON response: ${textError}`);
-        }
-      }
-
-      const data = await res.json();
       setCrawlId(data.crawl_id);
     } catch (err) {
       if (err instanceof Error) setError(err.message);

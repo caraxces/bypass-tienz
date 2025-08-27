@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import apiFetch from '@/utils/api';
 
 type ResultGroup = string[][];
 
@@ -25,16 +26,10 @@ export default function KeywordCheckerPage() {
     setAnalysisPerformed(true);
 
     try {
-      const response = await fetch('/api/keyword-checker/find-similar', {
+      const data = await apiFetch('/api/keyword-checker/find-similar', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ keywords, threshold: similarity / 100 }), // Send threshold to backend
       });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error || 'Đã xảy ra lỗi khi phân tích.');
-      }
       
       setResultGroups(data.keywordGroups);
 

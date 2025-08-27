@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import apiFetch from '@/utils/api'; // Import a helper
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -15,24 +16,16 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const response = await fetch('/api/auth/signin', {
+      // Use the apiFetch helper instead of the native fetch
+      const data = await apiFetch('/api/auth/signin', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
-
-      if (response.ok) {
-        // --- THIS IS THE KEY CHANGE ---
-        // Save the token to localStorage
-        localStorage.setItem('authToken', data.token); 
-        // --- END OF CHANGE ---
-        
-        router.push('/dashboard');
-      } else {
-        setError(data.error || 'Login failed');
-      }
+      // Since apiFetch automatically handles errors,
+      // we can assume the request was successful here.
+      localStorage.setItem('authToken', data.token);
+      router.push('/dashboard');
 
     } catch (err) {
       if (err instanceof Error) {

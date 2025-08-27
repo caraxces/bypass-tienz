@@ -2,32 +2,25 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import apiFetch from '@/utils/api';
 
 export default function SignupPage() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await fetch('http://localhost:3001/api/auth/signup', {
+      await apiFetch('/api/auth/signup', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password, full_name: fullName }),
+        body: JSON.stringify({ email, password, full_name: fullName, role_id: 2 }), // Default to 'User' role
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Something went wrong');
-      }
-
-      alert('Đăng ký thành công! Vui lòng kiểm tra email để xác thực.');
-      // Chuyển hướng về trang đăng nhập
-      window.location.href = '/login';
+      alert('Đăng ký thành công! Vui lòng kiểm tra email để xác thực (nếu có). Chuyển hướng đến trang đăng nhập...');
+      router.push('/login');
 
     } catch (error) {
       if (error instanceof Error) {

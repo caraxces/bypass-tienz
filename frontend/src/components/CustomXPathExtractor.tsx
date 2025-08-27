@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import apiFetch from '@/utils/api';
 
 type ExtractionResult = string[];
 
@@ -21,16 +22,10 @@ export default function CustomXPathExtractor() {
     setResults([]);
 
     try {
-      const response = await fetch('/api/tools/import-xml', {
+      const data = await apiFetch('/api/tools/import-xml', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url, xpathExpression }),
       });
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Trích xuất thất bại.');
-      }
       setResults(data.results);
     } catch (err) {
       if (err instanceof Error) setError(err.message);
