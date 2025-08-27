@@ -22,7 +22,7 @@ router.get('/', async (req, res) => {
 
 // POST a new project for the authenticated user
 router.post('/', async (req, res) => {
-  const { name, website_url } = req.body;
+  const { name, website_url, slug, language, country, device } = req.body;
   if (!name || !website_url) {
     return res.status(400).json({ error: 'Project name and website URL are required.' });
   }
@@ -33,6 +33,10 @@ router.post('/', async (req, res) => {
       .insert({
         name,
         website_url,
+        slug,
+        language,
+        country,
+        device,
         user_id: req.user.id,
       })
       .select()
@@ -53,25 +57,15 @@ router.post('/', async (req, res) => {
 router.get('/:projectId/keywords', async (req, res) => {
     const { projectId } = req.params;
     try {
-        const { data, error } = await supabase
-            .from('keywords')
-            .select(`
-                id,
-                keyword_text,
-                rankings ( rank order by created_at desc limit 1)
-            `)
-            .eq('project_id', projectId)
-            .order('created_at', { ascending: false });
+        // Gọi hàm RPC đã tạo trong Supabase
+        const { data, error } = await supabase.rpc('get_project_keywords_with_latest_rank', {
+            project_id_param: projectId
+        });
 
         if (error) throw error;
-        
-        const keywordsWithRank = data.map(kw => ({
-            id: kw.id,
-            keyword_text: kw.keyword_text,
-            latest_rank: kw.rankings.length > 0 ? kw.rankings[0].rank : null
-        }));
 
-        res.json(keywordsWithRank);
+        // Dữ liệu trả về đã có đúng định dạng, không cần map lại
+        res.json(data);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

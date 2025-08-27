@@ -52,13 +52,12 @@ app.use('/api/rank-checker', rankCheckerRouter);
 app.use('/api/keyword-checker', keywordCheckerRouter); // Sử dụng router mới
 app.use('/api/link-position-checker', linkPositionCheckerRouter); // Sử dụng router mới
 app.use('/api/schemas', authMiddleware, schemasRouter); // Sử dụng router mới
-app.use('/api/tags', tagsRouter); // Using the new router
+app.use('/api/tags', authMiddleware, tagsRouter); // Using the new router
 
 // Protected Routes
 app.use('/api/crawl', authMiddleware, crawlRouter);
 app.use('/api/projects', authMiddleware, projectsRouter);
 app.use('/api/keywords', authMiddleware, keywordsRouter);
-app.use('/api/schemas', authMiddleware, schemasRouter);
 
 // Admin Routes
 app.use('/api/users', authMiddleware, adminMiddleware, usersRouter); // Sử dụng router mới
