@@ -1,9 +1,7 @@
 'use client';
 import { useState } from 'react';
 
-interface ExtractionResult {
-  [index: number]: string;
-}
+type ExtractionResult = string[];
 
 export default function CustomXPathExtractor() {
   const [url, setUrl] = useState('');
