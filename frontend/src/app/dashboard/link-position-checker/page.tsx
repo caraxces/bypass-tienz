@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import apiFetch from '@/utils/api';
 
 interface PositionResult {
   found: boolean;
@@ -26,16 +27,10 @@ export default function LinkPositionCheckerPage() {
     setResult(null);
 
     try {
-      const response = await fetch('/api/link-position-checker/check', {
+      const data = await apiFetch('/api/link-position-checker/check', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ pageUrl, targetLink, xpathExpression }),
       });
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Kiểm tra thất bại.');
-      }
       setResult(data);
     } catch (err) {
       if (err instanceof Error) setError(err.message);

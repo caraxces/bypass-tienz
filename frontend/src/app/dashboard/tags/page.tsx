@@ -80,7 +80,7 @@ export default function TagsPage() {
     }
   };
   
-  const scriptUrl = selectedProjectId ? `${window.location.origin}/api/tags/public/${selectedProjectId}.js` : '';
+  const scriptUrl = selectedProjectId ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api/tags/public/${selectedProjectId}.js` : '';
 
   return (
     <div className="space-y-8">
