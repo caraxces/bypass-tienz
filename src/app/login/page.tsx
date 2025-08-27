@@ -15,7 +15,7 @@ export default function LoginPage() {
     setError(null);
 
     try {
-      const response = await fetch('http://localhost:3001/api/auth/signin', {
+      const response = await fetch('/api/auth/signin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -23,15 +23,16 @@ export default function LoginPage() {
 
       const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Đăng nhập thất bại.');
+      if (response.ok) {
+        // --- THIS IS THE KEY CHANGE ---
+        // Save the token to localStorage
+        localStorage.setItem('authToken', data.token); 
+        // --- END OF CHANGE ---
+        
+        router.push('/dashboard');
+      } else {
+        setError(data.error || 'Login failed');
       }
-
-      // TODO: Lưu session/token vào cookie hoặc local storage
-      console.log('Đăng nhập thành công:', data);
-
-      // Chuyển hướng đến dashboard
-      router.push('/dashboard');
 
     } catch (err) {
       if (err instanceof Error) {

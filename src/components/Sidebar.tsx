@@ -5,10 +5,11 @@ import { usePathname } from 'next/navigation';
 
 // You can find icons at https://heroicons.com/
 const Tools = [
-  { name: 'Import XML', href: '/dashboard/import-xml', icon: '📄' },
-  { name: 'Check vị trí link', href: '/dashboard/link-checker', icon: '🔗' },
+  { name: 'Website Audit', href: '/dashboard/audit', icon: '🔬' },
+  { name: 'Check vị trí link', href: '/dashboard/link-position-checker', icon: '📍' }, // Changed href and icon
+  { name: 'Check thứ hạng link', href: '/dashboard/link-checker', icon: '🔗' }, // Renamed
+  { name: 'Theo dõi Dự án', href: '/dashboard/projects', icon: '📂' },
   { name: 'Check từ khóa chính', href: '/dashboard/keyword-checker', icon: '🔍' },
-  { name: 'Danh sách từ khóa', href: '/dashboard/keywords', icon: '🔑' },
   { name: 'Danh sách Schema', href: '/dashboard/schemas', icon: '📝' },
   { name: 'Danh sách Tag', href: '/dashboard/tags', icon: '🔖' },
   { name: 'Quản lý User', href: '/dashboard/users', icon: '👥' },
