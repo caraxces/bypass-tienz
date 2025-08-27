@@ -124,8 +124,8 @@ export default function AuditPage() {
     if (activeTab === 'Visualization' || activeTab === 'CustomXPath' || !XPATH_FILTERS[activeTab as FilterName]) {
       return allResults;
     }
-    const filterFn = XPATH_FILTERS[activeTab as FilterName].filter;
-    return allResults.filter(page => filterFn(page.html_content || ''));
+    const filterFn = XPATH_FILTERS[activeTab as FilterName];
+    return allResults.filter(page => filterFn(page));
   }, [allResults, activeTab]);
   
   const allTabNames: TabName[] = ['Tất cả trang', ...Object.keys(XPATH_FILTERS).filter(t => t !== 'Tất cả trang') as FilterName[], 'Visualization', 'CustomXPath'];
@@ -141,7 +141,7 @@ export default function AuditPage() {
       <AuditResults
         results={filteredResults}
         totalCrawled={pagesCrawled}
-        filterTitle={XPATH_FILTERS[activeTab as FilterName]?.title || 'Tất cả các trang đã quét'}
+        filterTitle={activeTab}
       />
     );
   };
@@ -192,7 +192,7 @@ export default function AuditPage() {
                       : 'text-gray-500 hover:text-gray-700'
                   }`}
                 >
-                  {XPATH_FILTERS[tabName as FilterName]?.title || (tabName === 'Visualization' ? 'Trực quan hóa' : 'Trích xuất XPath')}
+                  {tabName}
                 </button>
               ))}
             </div>
