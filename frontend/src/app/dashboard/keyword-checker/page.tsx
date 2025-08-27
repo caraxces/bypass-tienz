@@ -1,9 +1,7 @@
 'use client';
 import { useState } from 'react';
 
-interface ResultGroup {
-  [index: number]: string[];
-}
+type ResultGroup = string[][];
 
 export default function KeywordCheckerPage() {
   const [keywordsInput, setKeywordsInput] = useState('');
@@ -11,6 +9,8 @@ export default function KeywordCheckerPage() {
   const [error, setError] = useState<string | null>(null);
   const [resultGroups, setResultGroups] = useState<ResultGroup>([]);
   const [similarity, setSimilarity] = useState(60); // State for similarity threshold
+  const [analysisPerformed, setAnalysisPerformed] = useState(false);
+
 
   const handleAnalyze = async () => {
     const keywords = keywordsInput.split('\n').filter(kw => kw.trim() !== '');
@@ -22,6 +22,7 @@ export default function KeywordCheckerPage() {
     setIsLoading(true);
     setError(null);
     setResultGroups([]);
+    setAnalysisPerformed(true);
 
     try {
       const response = await fetch('/api/keyword-checker/find-similar', {
@@ -110,9 +111,9 @@ export default function KeywordCheckerPage() {
             </div>
         </div>
       )}
-       { !isLoading && resultGroups.length === 0 && keywordsInput.split('\n').filter(kw => kw.trim() !== '').length > 1 &&
+       { !isLoading && analysisPerformed && resultGroups.length === 0 &&
             <div className="p-6 bg-white rounded-lg shadow-md">
-                 <p className="text-center text-gray-600">Không tìm thấy nhóm từ khóa nào có độ tương tự trên 60%.</p>
+                 <p className="text-center text-gray-600">Không tìm thấy nhóm từ khóa nào có độ tương tự trên {similarity}%.</p>
             </div>
        }
     </div>
