@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const axios = require('axios');
-const { JSDOM } = require('jsdom');
-const xpath = require('xpath');
+const puppeteer = require('puppeteer');
+const path = require('path'); // For saving screenshot
 
 // POST /api/tools/import-xml
 router.post('/import-xml', async (req, res) => {
@@ -12,33 +11,53 @@ router.post('/import-xml', async (req, res) => {
     return res.status(400).json({ error: 'URL and XPath expression are required.' });
   }
 
+  let browser = null;
   try {
-    // 1. Fetch the content from the URL
-    const response = await axios.get(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-      }
+    console.log('Launching visible browser for debugging...');
+    browser = await puppeteer.launch({
+      headless: false, // <-- This will show the browser window
+      slowMo: 50, // Slows down Puppeteer operations by 50ms to make it easier to see what is happening
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
     });
-    const content = response.data;
+    const page = await browser.newPage();
 
-    // 2. Parse the content using JSDOM
-    // JSDOM is robust and can handle messy HTML/XML like a browser
-    const dom = new JSDOM(content, { contentType: "application/xml" });
-    const doc = dom.window.document;
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
 
-    // 3. Select nodes using the standard XPath library
-    const nodes = xpath.select(xpathExpression, doc);
+    console.log(`Navigating to ${url}...`);
+    await page.goto(url, { waitUntil: 'networkidle0', timeout: 60000 });
+    console.log('Page loaded.');
+    
+    // Give page a little extra time for scripts
+    await new Promise(r => setTimeout(r, 2000));
 
-    // 4. Extract text content from the selected nodes
-    const results = nodes.map(node => (node.textContent || node.nodeValue || '').trim());
+    const screenshotPath = path.join(__dirname, '..', '..', 'debug.png');
+    await page.screenshot({ path: screenshotPath });
+    console.log(`Screenshot saved to ${screenshotPath}`);
+
+    // Evaluate XPath directly in the browser context
+    console.log(`Evaluating XPath: ${xpathExpression}`);
+    const results = await page.evaluate((xpath) => {
+      const iterator = document.evaluate(xpath, document, null, XPathResult.ORDERED_NODE_ITERATOR_TYPE, null);
+      const elements = [];
+      let element = iterator.iterateNext();
+      while (element) {
+        elements.push(element.textContent.trim());
+        element = iterator.iterateNext();
+      }
+      return elements;
+    }, xpathExpression);
+    
+    console.log(`Found ${results.length} results.`);
 
     res.json({ results });
   } catch (error) {
     console.error(error);
-    if (axios.isAxiosError(error)) {
-      return res.status(500).json({ error: `Failed to fetch from URL: ${error.message}` });
-    }
     res.status(500).json({ error: 'An error occurred while processing the content.', details: error.message });
+  } finally {
+    if (browser) {
+      console.log('Closing browser...');
+      await browser.close();
+    }
   }
 });
 

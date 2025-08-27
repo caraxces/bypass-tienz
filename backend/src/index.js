@@ -13,6 +13,7 @@ const port = process.env.PORT || 3001;
 // CORS configuration
 const allowedOrigins = [
   'http://localhost:3000', // for local development
+  'http://localhost:3001',
   'https://bypass-tienz-xuy6.vercel.app', // your vercel app
   'https://bypass-tienz.vercel.app'
 ];

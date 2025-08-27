@@ -7,6 +7,7 @@ interface PositionResult {
   position?: number;
   totalLinks?: number;
   message?: string;
+  image?: string; // To hold the base64 image string
 }
 
 export default function LinkPositionCheckerPage() {
@@ -16,6 +17,7 @@ export default function LinkPositionCheckerPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<PositionResult | null>(null);
+  const [screenshot, setScreenshot] = useState<string | null>(null);
 
   const handleCheckPosition = async () => {
     if (!pageUrl || !targetLink || !xpathExpression) {
@@ -25,6 +27,7 @@ export default function LinkPositionCheckerPage() {
     setIsLoading(true);
     setError(null);
     setResult(null);
+    setScreenshot(null);
 
     try {
       const data = await apiFetch('/api/link-position-checker/check', {
@@ -32,6 +35,9 @@ export default function LinkPositionCheckerPage() {
         body: JSON.stringify({ pageUrl, targetLink, xpathExpression }),
       });
       setResult(data);
+      if (data.image) {
+        setScreenshot(data.image);
+      }
     } catch (err) {
       if (err instanceof Error) setError(err.message);
     } finally {
@@ -84,6 +90,19 @@ export default function LinkPositionCheckerPage() {
               <span className="font-bold">Không tìm thấy.</span> {result.message}
             </p>
           )}
+        </div>
+      )}
+
+      {screenshot && (
+        <div className="p-6 mt-8 bg-white rounded-lg shadow-md">
+           <h3 className="text-lg font-semibold">Ảnh chụp vùng nội dung được chọn</h3>
+           <div className="mt-4 overflow-auto border border-gray-300 rounded-md">
+            <img 
+              src={`data:image/png;base64,${screenshot}`} 
+              alt="Ảnh chụp màn hình của vùng nội dung được chọn bởi XPath" 
+              className="max-w-full h-auto"
+            />
+           </div>
         </div>
       )}
     </div>

@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const axios = require('axios');
-const { JSDOM } = require('jsdom');
+const puppeteer = require('puppeteer');
 
 router.post('/check', async (req, res) => {
     const { pageUrl, targetLink, xpathExpression } = req.body;
@@ -10,52 +9,78 @@ router.post('/check', async (req, res) => {
         return res.status(400).json({ error: 'Page URL, target link, and XPath expression are required.' });
     }
 
+    let browser = null;
     try {
-        const { data: htmlContent } = await axios.get(pageUrl);
-        const dom = new JSDOM(htmlContent, { url: pageUrl });
-        const document = dom.window.document;
-
-        const containerNodes = [];
-        const xpathResult = document.evaluate(xpathExpression, document, null, dom.window.XPathResult.ANY_TYPE, null);
-        
-        let node = xpathResult.iterateNext();
-        while (node) {
-            containerNodes.push(node);
-            node = xpathResult.iterateNext();
-        }
-
-        if (containerNodes.length === 0) {
-            return res.json({ found: false, message: 'Không tìm thấy vùng nội dung với XPath đã cho.' });
-        }
-
-        const allLinksInContainer = [];
-        containerNodes.forEach(container => {
-            const links = container.querySelectorAll('a');
-            links.forEach(link => allLinksInContainer.push(link.href));
+        browser = await puppeteer.launch({
+            headless: true,
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
+        const page = await browser.newPage();
+        // Increase timeout to 60s and use a more lenient wait condition
+        await page.goto(pageUrl, { waitUntil: 'networkidle2', timeout: 60000 });
 
-        const targetLinkAbsolute = new dom.window.URL(targetLink, pageUrl).href;
+        // Use a more robust waiting mechanism
+        try {
+            await page.waitForFunction(
+                xpath => document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue,
+                { timeout: 10000 },
+                xpathExpression
+            );
+        } catch (e) {
+            return res.json({ found: false, message: 'Không tìm thấy vùng nội dung với XPath đã cho trong vòng 10 giây.', image: null });
+        }
         
-        const linkIndex = allLinksInContainer.findIndex(href => href === targetLinkAbsolute);
+        // Get the element handle using a reliable method
+        const elementHandle = await page.evaluateHandle(
+            xpath => document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue,
+            xpathExpression
+        );
 
-        if (linkIndex !== -1) {
+        if (!elementHandle.asElement()) {
+            return res.json({ found: false, message: 'Đã tìm thấy nhưng không thể lấy được vùng nội dung. XPath có thể không trỏ đến một phần tử hợp lệ.', image: null });
+        }
+
+        // Take a screenshot of the element
+        const imageBuffer = await elementHandle.screenshot({ encoding: 'base64' });
+
+        // Get all links within the element
+        const linksData = await page.evaluate((element, target) => {
+            const allLinks = Array.from(element.querySelectorAll('a')).map(a => a.href);
+            const found = allLinks.includes(target);
+            let position = -1;
+            if (found) {
+                position = allLinks.findIndex(href => href === target) + 1;
+            }
+            return {
+                found: found,
+                position: position,
+                totalLinks: allLinks.length,
+                allLinks: allLinks
+            };
+        }, elementHandle, targetLink);
+
+        if (linksData.found) {
             res.json({
                 found: true,
-                position: linkIndex + 1,
-                totalLinks: allLinksInContainer.length
+                position: linksData.position,
+                totalLinks: linksData.totalLinks,
+                image: imageBuffer
             });
         } else {
-            res.json({
+             res.json({
                 found: false,
-                message: `Không tìm thấy link trong vùng nội dung. Tổng số link trong vùng: ${allLinksInContainer.length}.`
+                message: `Không tìm thấy link trong vùng nội dung. Tổng số link trong vùng: ${linksData.totalLinks}.`,
+                image: imageBuffer
             });
         }
 
     } catch (error) {
-        if (error.response) {
-            return res.status(500).json({ error: `Không thể tải URL. Status code: ${error.response.status}` });
-        }
+        console.error('Error in link position checker:', error);
         res.status(500).json({ error: 'Đã xảy ra lỗi khi phân tích trang.', details: error.message });
+    } finally {
+        if (browser) {
+            await browser.close();
+        }
     }
 });
 
