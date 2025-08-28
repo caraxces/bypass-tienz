@@ -2,43 +2,45 @@ const express = require('express');
 const router = express.Router();
 const supabase = require('../supabaseClient');
 const puppeteer = require('puppeteer'); // Import Puppeteer
+const { getJson } = require("serpapi");
+require('dotenv').config();
+const authMiddleware = require('../middleware/authMiddleware'); // Import authMiddleware
 
-// Hàm helper để tìm kiếm và trích xuất thứ hạng
-async function findKeywordRank(keywordText, domainToFind) {
-    const browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
-    });
-    const page = await browser.newPage();
-
+// Hàm helper để tìm kiếm và trích xuất thứ hạng theo chuẩn SEO
+async function findKeywordRank(keywordText, domain) {
+    console.log(`[SerpApi] Bắt đầu tìm kiếm ranking cho keyword: "${keywordText}" với domain: "${domain}"`);
+    
     try {
-        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+        const response = await getJson({
+            engine: "google",
+            q: keywordText,
+            location: "Vietnam",
+            google_domain: "google.com.vn",
+            gl: "vn",
+            hl: "vi",
+            num: 100, // Lấy 100 kết quả
+            api_key: process.env.SERPAPI_KEY
+        });
 
-        const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(keywordText)}&num=100&gl=us&hl=en`;
-        console.log(`Navigating to ${searchUrl} to find domain ${domainToFind}`);
-        
-        await page.goto(searchUrl, { waitUntil: 'domcontentloaded' });
+        const organicResults = response.organic_results;
+        if (!organicResults || organicResults.length === 0) {
+            console.log('[SerpApi] Không tìm thấy kết quả tự nhiên nào.');
+            return null;
+        }
 
-        const rank = await page.evaluate((domain) => {
-            const searchResults = document.querySelectorAll('#search .g, #search .rc, #search [data-hveid]');
-            let foundPosition = null;
+        for (const result of organicResults) {
+            if (result.link && result.link.includes(domain)) {
+                console.log(`[SerpApi] TÌM THẤY! Domain "${domain}" ở vị trí ${result.position}.`);
+                return result.position;
+            }
+        }
 
-            searchResults.forEach((result, index) => {
-                const urlElement = result.querySelector('a[href]');
-                if (urlElement && urlElement.href.includes(domain)) {
-                    if (foundPosition === null) { // Chỉ lấy vị trí đầu tiên tìm thấy
-                        foundPosition = index + 1;
-                    }
-                }
-            });
+        console.log(`[SerpApi] Không tìm thấy domain "${domain}" trong top 100.`);
+        return null; // Không tìm thấy
 
-            return foundPosition;
-        }, domainToFind);
-
-        return rank;
-
-    } finally {
-        await browser.close();
+    } catch (error) {
+        console.error('[SerpApi] Đã xảy ra lỗi khi gọi API:', error.message);
+        throw new Error('Lỗi khi kiểm tra thứ hạng từ SerpApi.');
     }
 }
 
@@ -108,6 +110,77 @@ router.post('/:keywordId/check', async (req, res) => {
     } catch (error) {
         console.error('Failed to check rank:', error);
         res.status(500).json({ error: 'Failed to check rank.', details: error.message });
+    }
+});
+
+// === API MỚI CHO VIỆC NHẬP TAY THỨ HẠNG ===
+router.put('/:keywordId/manual-rank', authMiddleware, async (req, res) => {
+    const { keywordId } = req.params;
+    const { rank } = req.body;
+    const userId = req.user.id;
+
+    if (rank === null || rank === undefined || isNaN(parseInt(rank))) {
+        return res.status(400).json({ message: 'Thứ hạng không hợp lệ.' });
+    }
+
+    const newRank = parseInt(rank);
+
+    try {
+        // Bước 1: Lấy thông tin keyword để kiểm tra quyền sở hữu
+        const { data: keywordData, error: keywordError } = await supabase
+            .from('keywords')
+            .select(`
+                id,
+                project_id,
+                projects (
+                    user_id
+                )
+            `)
+            .eq('id', keywordId)
+            .single();
+
+        if (keywordError || !keywordData) {
+            return res.status(404).json({ message: 'Không tìm thấy từ khóa.' });
+        }
+
+        if (keywordData.projects.user_id !== userId) {
+            return res.status(403).json({ message: 'Bạn không có quyền cập nhật từ khóa này.' });
+        }
+        
+        // Bước 2: Cập nhật `latest_rank` trong bảng `keywords`
+        const { data: updatedKeyword, error: updateError } = await supabase
+            .from('keywords')
+            .update({ latest_rank: newRank, last_checked: new Date().toISOString() })
+            .eq('id', keywordId)
+            .select()
+            .single();
+
+        if (updateError) {
+            console.error('Lỗi khi cập nhật bảng keywords:', updateError);
+            throw updateError;
+        }
+
+        // Bước 3: Ghi lại lịch sử vào bảng `rankings`
+        const { error: insertError } = await supabase
+            .from('rankings')
+            .insert({
+                keyword_id: keywordId,
+                rank: newRank,
+                checked_at: new Date().toISOString(),
+                search_engine: 'manual', // Đánh dấu đây là bản ghi nhập tay
+                is_owned: true // Vì là nhập tay nên mặc định là sở hữu
+            });
+
+        if (insertError) {
+            // Dù có lỗi ghi lịch sử, vẫn trả về thành công vì keyword đã được cập nhật
+            console.error('Lỗi khi ghi lịch sử ranking (nhập tay):', insertError);
+        }
+
+        res.json({ message: 'Cập nhật thứ hạng thành công.', keyword: updatedKeyword });
+
+    } catch (error) {
+        console.error('Lỗi khi cập nhật thứ hạng thủ công:', error);
+        res.status(500).json({ message: 'Lỗi máy chủ nội bộ' });
     }
 });
 
