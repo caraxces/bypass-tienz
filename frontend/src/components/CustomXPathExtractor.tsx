@@ -2,14 +2,20 @@
 import { useState } from 'react';
 import apiFetch from '@/utils/api';
 
-type ExtractionResult = string[];
+interface ExtractionResult {
+  url: string;
+  title: string;
+  h1: string;
+  metaDesc: string;
+  canonical: string;
+}
 
 export default function CustomXPathExtractor() {
   const [url, setUrl] = useState('');
-  const [xpathExpression, setXpathExpression] = useState('//a');
+  const [xpathExpression, setXpathExpression] = useState('//loc');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [results, setResults] = useState<ExtractionResult>([]);
+  const [results, setResults] = useState<ExtractionResult[]>([]);
 
   const handleExtract = async () => {
     if (!url || !xpathExpression) {
@@ -74,13 +80,32 @@ export default function CustomXPathExtractor() {
       {error && <p className="text-sm text-red-600">{error}</p>}
       
       {results.length > 0 && (
-        <div className="p-6 bg-white rounded-lg shadow-md">
+        <div className="p-6 mt-6 bg-white rounded-lg shadow-md">
           <h3 className="text-lg font-semibold">Kết quả ({results.length})</h3>
-          <ul className="mt-4 space-y-2 list-disc list-inside">
-            {results.map((item, index) => (
-              <li key={index} className="text-gray-700 break-all">{item}</li>
-            ))}
-          </ul>
+          <div className="mt-4 overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">URL</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">H1</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Meta Desc</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Canonical</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {results.map((item, index) => (
+                  <tr key={index}>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 break-all">{item.url}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.title}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.h1}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.metaDesc}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 break-all">{item.canonical}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

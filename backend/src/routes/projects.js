@@ -57,16 +57,55 @@ router.post('/', async (req, res) => {
 router.get('/:projectId/keywords', async (req, res) => {
     const { projectId } = req.params;
     try {
-        // Gọi hàm RPC đã tạo trong Supabase
-        const { data, error } = await supabase.rpc('get_project_keywords_with_latest_rank', {
-            project_id_param: projectId
-        });
+        // Lấy keywords của project với thông tin rank mới nhất
+        const { data: keywords, error: keywordsError } = await supabase
+            .from('keywords')
+            .select('id, keyword_text, created_at')
+            .eq('project_id', projectId)
+            .order('created_at', { ascending: false });
 
-        if (error) throw error;
+        if (keywordsError) throw keywordsError;
 
-        // Dữ liệu trả về đã có đúng định dạng, không cần map lại
-        res.json(data);
+        // Nếu không có keywords, trả về mảng rỗng
+        if (!keywords || keywords.length === 0) {
+            return res.json([]);
+        }
+
+        // Lấy rank mới nhất cho mỗi keyword
+        const keywordsWithRanks = await Promise.all(
+            keywords.map(async (keyword) => {
+                try {
+                    const { data: latestRank, error: rankError } = await supabase
+                        .from('rankings')
+                        .select('rank, checked_at')
+                        .eq('keyword_id', keyword.id)
+                        .order('checked_at', { ascending: false })
+                        .limit(1)
+                        .single();
+
+                    return {
+                        id: keyword.id,
+                        keyword_text: keyword.keyword_text,
+                        latest_rank: latestRank ? latestRank.rank : null,
+                        last_checked: latestRank ? latestRank.checked_at : null,
+                        created_at: keyword.created_at
+                    };
+                } catch (rankError) {
+                    // Nếu không có rank, trả về keyword không có rank
+                    return {
+                        id: keyword.id,
+                        keyword_text: keyword.keyword_text,
+                        latest_rank: null,
+                        last_checked: null,
+                        created_at: keyword.created_at
+                    };
+                }
+            })
+        );
+
+        res.json(keywordsWithRanks);
     } catch (error) {
+        console.error('Error fetching project keywords:', error);
         res.status(500).json({ error: error.message });
     }
 });

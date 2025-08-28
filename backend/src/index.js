@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
+const cookieParser = require('cookie-parser'); // Import cookie-parser
 const authMiddleware = require('./middleware/authMiddleware'); // Import middleware
 const adminMiddleware = require('./middleware/adminMiddleware'); // Import admin middleware
 const schemasRouter = require('./routes/schemas');
@@ -27,11 +28,14 @@ const corsOptions = {
       return callback(new Error(msg), false);
     }
     return callback(null, true);
-  }
+  },
+  credentials: true // Cho phép trình duyệt gửi cookie
 };
 
 app.use(cors(corsOptions));
 app.use(express.json());
+app.use(cookieParser()); // Sử dụng cookie-parser
+app.disable('etag'); // Vô hiệu hóa ETag để ngăn chặn lỗi 304 Not Modified
 
 // Import routes
 const rolesRouter = require('./routes/roles');
@@ -43,6 +47,7 @@ const keywordsRouter = require('./routes/keywords'); // Thêm router mới
 const rankCheckerRouter = require('./routes/rank-checker'); // Thêm router mới
 const keywordCheckerRouter = require('./routes/keyword-checker'); // Import router mới
 const linkPositionCheckerRouter = require('./routes/link-position-checker'); // Import router mới
+const keywordRankingCheckerRouter = require('./routes/keyword-ranking-checker'); // Import router mới
 
 // Use routes
 app.use('/api/roles', rolesRouter);
@@ -51,6 +56,7 @@ app.use('/api/tools', toolsRouter);
 app.use('/api/rank-checker', rankCheckerRouter);
 app.use('/api/keyword-checker', keywordCheckerRouter); // Sử dụng router mới
 app.use('/api/link-position-checker', linkPositionCheckerRouter); // Sử dụng router mới
+app.use('/api/keyword-ranking-checker', keywordRankingCheckerRouter); // Sử dụng router mới
 app.use('/api/schemas', authMiddleware, schemasRouter); // Sử dụng router mới
 app.use('/api/tags', authMiddleware, tagsRouter); // Using the new router
 

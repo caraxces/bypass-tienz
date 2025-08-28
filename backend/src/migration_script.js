@@ -156,18 +156,30 @@ async function migrateKeywords(userId, oldToNewIdMap) {
                 for (const match of valueMatches) {
                     totalKeywordsFound++;
                     const values = parseSqlInsertValues(match);
-                    // Cấu trúc: id, text, projectId, language, country, device, userId, createdAt
-                    const [old_id, keyword_text, old_projectId] = values;
-
-                    const new_project_id = oldToNewIdMap[old_projectId];
                     
-                    if (new_project_id) {
-                         keywordsToInsert.push({
-                            keyword_text,
-                            project_id: new_project_id,
-                            user_id: userId
-                        });
+                    // Cấu trúc thực tế của bảng keyword cũ:
+                    // [id, content, pos, bestPos, fullUrl, lastChecked, projectId, hasError]
+                    if (values.length >= 8) {
+                        const [old_id, content, pos, bestPos, fullUrl, lastChecked, projectId, hasError] = values;
+                        
+                        // Kiểm tra xem project ID này đã được migrate chưa
+                        const new_project_id = oldToNewIdMap[projectId];
+                        
+                        if (new_project_id) {
+                            // Tạo object keyword mới với cấu trúc Supabase hiện tại
+                            const keywordData = {
+                                keyword_text: content,
+                                project_id: new_project_id,
+                                user_id: userId
+                            };
+                            
+                            keywordsToInsert.push(keywordData);
+                        } else {
+                            console.warn(`Keyword "${content}" skipped: Project ID ${projectId} not found in migrated projects`);
+                            unmappedKeywords++;
+                        }
                     } else {
+                        console.warn(`Invalid keyword data structure: Expected 8 columns, got ${values.length}`);
                         unmappedKeywords++;
                     }
 

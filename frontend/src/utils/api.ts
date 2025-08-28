@@ -6,14 +6,15 @@ const getAuthToken = (): string | null => {
 };
 
 const getApiBaseUrl = (): string => {
-    // This will use the Vercel URL in production, and localhost in development
-    return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    // Với proxy, chúng ta không cần URL đầy đủ nữa, chỉ cần đường dẫn tương đối.
+    // Trình duyệt sẽ tự động gửi yêu cầu đến cùng origin (localhost:3000)
+    return '';
 };
 
 const apiFetch = async (url: string, options: RequestInit = {}): Promise<any> => {
     const token = getAuthToken();
     const baseUrl = getApiBaseUrl();
-    const fullUrl = url.startsWith('/') ? `${baseUrl}${url}` : url;
+    const fullUrl = `${baseUrl}${url}`; // URL giờ sẽ là /api/..., ví dụ: /api/auth/login
     
     const headers = {
         'Content-Type': 'application/json',
