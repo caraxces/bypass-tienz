@@ -40,16 +40,16 @@ export default function SignupPage() {
     return (
         <div className="flex items-center justify-center min-h-screen bg-gray-50">
             <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-lg shadow-md">
-                <h2 className="text-2xl font-bold text-center text-gray-900">
+                <h2 className="text-fib-2 font-bold text-center text-gray-900">
                     Tạo tài khoản mới
                 </h2>
                 {error && (
-                    <div className="p-3 text-sm text-red-700 bg-red-100 rounded-md">
+                    <div className="p-3 text-red-700 bg-red-100 rounded-md text-fib-1">
                         {error}
                     </div>
                 )}
                 {success && (
-                    <div className="p-3 text-sm text-green-700 bg-green-100 rounded-md">
+                    <div className="p-3 text-green-700 bg-green-100 rounded-md text-fib-1">
                         {success}
                     </div>
                 )}
@@ -65,7 +65,7 @@ export default function SignupPage() {
                                 required
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="relative block w-full px-3 py-2 text-gray-900 placeholder-gray-500 border border-gray-300 rounded-none appearance-none rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                                className="relative block w-full px-3 py-2 text-gray-900 placeholder-gray-500 border border-gray-300 rounded-none appearance-none rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 text-fib-1"
                                 placeholder="Địa chỉ email"
                             />
                         </div>
@@ -79,7 +79,7 @@ export default function SignupPage() {
                                 required
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="relative block w-full px-3 py-2 text-gray-900 placeholder-gray-500 border border-gray-300 rounded-none appearance-none rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                                className="relative block w-full px-3 py-2 text-gray-900 placeholder-gray-500 border border-gray-300 rounded-none appearance-none rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 text-fib-1"
                                 placeholder="Mật khẩu (ít nhất 6 ký tự)"
                             />
                         </div>
@@ -89,13 +89,13 @@ export default function SignupPage() {
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="relative flex justify-center w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md group hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
+                            className="relative flex justify-center w-full px-4 py-2 font-medium text-white bg-indigo-600 border border-transparent rounded-md group hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 text-fib-1"
                         >
                             {isLoading ? 'Đang xử lý...' : 'Đăng ký'}
                         </button>
                     </div>
                 </form>
-                <div className="text-sm text-center">
+                <div className="text-center text-fib-1">
                     <p>
                         Đã có tài khoản?{' '}
                         <Link href="/login" className="font-medium text-indigo-600 hover:text-indigo-500">

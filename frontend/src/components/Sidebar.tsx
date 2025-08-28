@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image'; // Import Image component
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 
@@ -20,9 +21,20 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <div className="flex flex-col w-64 bg-gray-50 border-r border-gray-200">
-      <div className="flex items-center justify-center h-20 border-b border-gray-200">
-        <h1 className="text-xl font-bold text-gray-800 tracking-wider">TienZiven</h1>
+    <motion.div 
+      initial={{ x: -100, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      transition={{ duration: 0.5, ease: "easeInOut" }}
+      className="flex flex-col h-full bg-white/70 backdrop-blur-lg shadow-lg rounded-2xl m-4"
+    >
+      <div className="flex items-center justify-center h-20">
+        <Image 
+          src="/favicon.ico" 
+          alt="App Logo" 
+          width={40} 
+          height={40} 
+          className="rounded-full"
+        />
       </div>
       <nav className="flex-1 px-4 py-4 space-y-2">
         {Tools.map((tool) => {
@@ -31,25 +43,34 @@ export default function Sidebar() {
             <Link
               key={tool.name}
               href={tool.href}
-              className="relative flex items-center px-3 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+              className="relative block"
             >
-              {isActive && (
-                <motion.span
-                  layoutId="sidebar_active_pill"
-                  className="absolute inset-0 bg-indigo-500 rounded-lg"
-                  style={{ zIndex: 10 }}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.3 }}
-                />
-              )}
-              <span className="relative" style={{ zIndex: 20 }}>
-                {tool.name}
-              </span>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.98 }}
+                className="relative flex items-center px-4 py-3 font-medium text-gray-800 rounded-lg hover:bg-gray-200/50 transition-colors duration-200 text-fib-1"
+              >
+                {isActive && (
+                  <motion.span
+                    layoutId="sidebar_active_pill"
+                    className="absolute inset-0 bg-indigo-500 rounded-lg"
+                    style={{ zIndex: 10 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                  />
+                )}
+                <span className={`relative z-20 ${isActive ? 'text-white' : ''}`}>
+                  {tool.name}
+                </span>
+              </motion.div>
             </Link>
           );
         })}
       </nav>
-    </div>
+      <div className="p-4 mt-auto text-center text-xs text-gray-500">
+        <p>tool by trucmt/caraxces 2025</p>
+      </div>
+    </motion.div>
   );
 }

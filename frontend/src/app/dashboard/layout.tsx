@@ -13,8 +13,11 @@ export default function DashboardLayout({
   const pathname = usePathname();
   return (
     <div className="flex h-screen bg-gray-100 overflow-hidden">
-      <Sidebar />
-      <div className="flex flex-col flex-1">
+      <div className="w-auto">
+        <Sidebar />
+      </div>
+      
+      <div className="flex flex-col flex-1 animated-gradient">
         <Header />
         <main className="flex-1 p-6 md:p-10 overflow-y-auto">
           <AnimatePresence mode="wait">
@@ -25,7 +28,9 @@ export default function DashboardLayout({
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.25 }}
             >
-              {children}
+              <div className="bg-white/50 backdrop-blur-lg p-6 rounded-2xl shadow-md">
+                {children}
+              </div>
             </motion.div>
           </AnimatePresence>
         </main>
