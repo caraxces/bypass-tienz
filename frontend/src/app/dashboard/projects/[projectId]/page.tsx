@@ -134,7 +134,7 @@ export default function ProjectDetailsPage() {
             const data = await apiFetch(`/api/projects/${projectId}/keywords/import`, {
                 method: 'POST',
                 body: formData,
-            }, true); // `true` để bỏ qua content-type header
+            }); // Đã xóa tham số thứ ba gây lỗi
 
             alert(data.message); // Hiển thị thông báo thành công
             fetchProjectData(); // Tải lại dữ liệu
