@@ -6,10 +6,14 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   async rewrites() {
+    const backendUrl = process.env.NODE_ENV === 'production'
+      ? 'https://bypass-tienz.onrender.com/api/:path*'
+      : 'http://localhost:3001/api/:path*';
+
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:3001/api/:path*', // Proxy to Backend
+        destination: backendUrl,
       },
     ]
   },
